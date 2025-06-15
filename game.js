@@ -94,6 +94,7 @@ function collectRoofItems() {
     for (let it of r.items) roofItems.push({...it, roof:r});
   }
 }
+
 // === ИНИЦИАЛИЗАЦИЯ ===
 function createHero() {
   let r = getCurrentRoof();
@@ -281,6 +282,27 @@ function startGame() {
   gameState = "play";
   requestAnimationFrame(gameLoop);
 }
+
+// === AIR OBSTACLES ===
+function spawnAirObstacle() {
+  if (!flyActive) return;
+  if (!airObstacles) airObstacles = [];
+  if (airObstacles.length > 5) return;
+  if (Math.random() < 0.04) {
+    let t = Math.random();
+    let type = t < 0.5 ? "cloud" : t < 0.8 ? "bird" : "sign";
+    let x = FIELD_W + 64 + Math.random()*100;
+    let y = 60 + Math.random() * (FIELD_H - 440);
+    airObstacles.push({type, x, y, w: 96, h: 56});
+  }
+}
+function shiftAirObstacles() {
+  for (let i=airObstacles.length-1; i>=0; i--) {
+    airObstacles[i].x -= FLY_SPEED;
+    if (airObstacles[i].x + airObstacles[i].w < 0) airObstacles.splice(i,1);
+  }
+}
+
 // === GAME LOOP ===
 function gameLoop() {
   if (gameState !== "play") return;
@@ -348,7 +370,7 @@ function gameLoop() {
     }
   }
 
-  // === ПАДЕНИЕ ===
+    // === ПАДЕНИЕ ===
   if (isFalling) {
     hero.y += fallSpeed;
     fallSpeed += 1.2;
@@ -371,6 +393,7 @@ function gameLoop() {
       isFalling = true; fallSpeed = 16;
     }
   } else if (flyActive) {
+    // === Флаппи-физика ===
     hero.y += hero.vy;
     hero.vy += 0.8;
     if (hero.y < 12) { hero.y = 12; hero.vy = 1; }
@@ -473,7 +496,104 @@ function gameLoop() {
   if (gameState === "play") requestAnimationFrame(gameLoop);
 }
 
-// === РИСОВАНИЕ ПРЕДМЕТА ===
+// === РИСОВКА ЭЛЕМЕНТОВ ===
+function drawRoof(ctx, r) {
+  ctx.save();
+  ctx.fillStyle="#292933";
+  ctx.fillRect(r.x,FIELD_H-r.h,r.w,r.h);
+  ctx.strokeStyle="#000"; ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(r.x,FIELD_H-r.h);
+  ctx.lineTo(r.x+r.w,FIELD_H-r.h);
+  ctx.stroke();
+  for (let x=r.x;x<r.x+r.w-8;x+=24) {
+    ctx.fillStyle="#343448";
+    ctx.fillRect(x,FIELD_H-r.h,12,Math.random()>0.7?8:16);
+  }
+  ctx.restore();
+}
+function drawRoofObstacle(ctx, ob) {
+  ctx.save();
+  if (ob.type===1) {
+    ctx.fillStyle="#111"; ctx.fillRect(ob.x,ob.y,ob.w,ob.h);
+    ctx.fillStyle="#fff"; ctx.fillRect(ob.x+8,ob.y+12,ob.w-16,7);
+  } else {
+    ctx.fillStyle="#d11"; ctx.fillRect(ob.x,ob.y,ob.w,ob.h);
+    ctx.fillStyle="#fff"; ctx.fillRect(ob.x+12,ob.y+ob.h-12,ob.w-24,6);
+  }
+  ctx.restore();
+}
+function drawCoin(ctx, c) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(c.x + c.r, c.y + c.r, c.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#FFD600";
+  ctx.shadowColor = "#EAB701";
+  ctx.shadowBlur = 8;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#FFF";
+  ctx.stroke();
+  ctx.restore();
+}
+function drawHeart(ctx, cx, cy, s) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s/6);
+  ctx.bezierCurveTo(cx + s/2, cy - s/2, cx + s, cy + s/3, cx, cy + s);
+  ctx.bezierCurveTo(cx - s, cy + s/3, cx - s/2, cy - s/2, cx, cy + s/6);
+  ctx.closePath();
+  ctx.fillStyle = "#EF1111";
+  ctx.shadowColor = "#fff";
+  ctx.shadowBlur = 3;
+  ctx.fill();
+  ctx.restore();
+}
+function drawImage(src, x, y, w, h) {
+  let toDraw = images[src] && images[src].complete && images[src].naturalWidth>0 ? src : PLACEHOLDER;
+  const img = images[toDraw];
+  if (img) ctx.drawImage(img, x, y, w, h);
+}
+function drawAirObstacle(ctx, obs) {
+  ctx.save();
+  if (obs.type === "cloud") {
+    ctx.globalAlpha = 0.29;
+    ctx.beginPath();
+    ctx.ellipse(obs.x+obs.w*0.4, obs.y+obs.h*0.6, obs.w*0.38, obs.h*0.33, 0, 0, 2*Math.PI);
+    ctx.ellipse(obs.x+obs.w*0.6, obs.y+obs.h*0.45, obs.w*0.35, obs.h*0.27, 0, 0, 2*Math.PI);
+    ctx.ellipse(obs.x+obs.w*0.7, obs.y+obs.h*0.7, obs.w*0.19, obs.h*0.23, 0, 0, 2*Math.PI);
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "#C0C0C0";
+    ctx.shadowBlur = 13;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  } else if (obs.type === "bird") {
+    ctx.beginPath();
+    ctx.ellipse(obs.x+obs.w/2, obs.y+obs.h/2, obs.w/2.1, obs.h/2.7, 0, 0, 2*Math.PI);
+    ctx.fillStyle = "#333";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(obs.x+obs.w*0.3, obs.y+obs.h*0.7);
+    ctx.lineTo(obs.x, obs.y+obs.h*0.5);
+    ctx.lineTo(obs.x+obs.w*0.45, obs.y+obs.h*0.1);
+    ctx.fillStyle = "#555";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(obs.x+obs.w*0.7, obs.y+obs.h*0.7);
+    ctx.lineTo(obs.x+obs.w, obs.y+obs.h*0.5);
+    ctx.lineTo(obs.x+obs.w*0.55, obs.y+obs.h*0.1);
+    ctx.fillStyle = "#555";
+    ctx.fill();
+  } else if (obs.type === "sign") {
+    ctx.fillStyle="#d11";
+    ctx.fillRect(obs.x,obs.y,obs.w,obs.h*0.78);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(obs.x+12,obs.y+obs.h*0.78-8,obs.w-24,8);
+  }
+  ctx.restore();
+}
 function drawItem(ctx, it) {
   ctx.save();
   ctx.beginPath();
@@ -503,4 +623,19 @@ function activateBuff(item) {
   if (item.effect === "fly") tryActivateFly();
 }
 
-// ... остальные функции drawRoof, drawRoofObstacle, drawCoin, drawHeart, drawImage, checkCollision, endGame, showScreen (оставь из своей версии, они не менялись)
+// === УТИЛИТЫ ===
+function checkCollision(a, b) {
+  return (a.x + a.w > b.x && a.x < b.x + (b.w||b.w) &&
+    a.y + a.h > b.y && a.y < b.y + (b.h||b.h));
+}
+function endGame() {
+  gameState = "gameover";
+  document.getElementById("finalScore").textContent = score;
+  showScreen("gameOverMenu");
+}
+function showScreen(id) {
+  document.getElementById("startMenu").classList.add("hidden");
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("gameOverMenu").classList.add("hidden");
+  if (id) document.getElementById(id).classList.remove("hidden");
+}

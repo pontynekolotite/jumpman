@@ -26,29 +26,31 @@ const DEBUFFS = [
   {type: "lowjump",   color: "#666",     effect: "lowjump", duration: 600,   icon: "⚫"}
 ];
 
-const images = {
-  "run 1.png": new Image(),
-  "run 2.png": new Image(),
-  "run 3.png": new Image(),
-  "run 4.png": new Image(),
-  "fly 1.png": new Image(),
-  "fly 2.png": new Image(),
-  "fly 3.png": new Image(),
-  "jumpman_retro_title_screen.png": new Image()
-};
-["run 1.png","run 2.png","run 3.png","run 4.png","fly 1.png","fly 2.png","fly 3.png","jumpman_retro_title_screen.png"].forEach(src=>{images[src].src=src;});
-const PLACEHOLDER = "run 1.png";
+// === ASSSET LOADER c fallback ===
+const images = {};
+const SPRITES = [
+  "run 1.png","run 2.png","run 3.png","run 4.png",
+  "fly 1.png","fly 2.png","fly 3.png",
+  "jumpman_retro_title_screen.png"
+];
+SPRITES.forEach(src => {
+  images[src] = new Image();
+  images[src].src = src;
+  images[src].onerror = () => { images[src].loaded = false; };
+  images[src].onload = () => { images[src].loaded = true; };
+});
+const PLACEHOLDER = "__PLACEHOLDER__";
 
 // === КРЫШИ ===
 function generateRoofs() {
   let x = 0, arr = [];
   while (x < FIELD_W+400) {
-    let w = 160 + Math.random()*180|0;
-    let h = 120 + Math.random()*60|0;
+    let w = 180 + Math.random()*130|0;
+    let h = 160 + Math.random()*44|0;
     arr.push({x, w, h, gap:false});
     x += w;
     if (x < FIELD_W+320) {
-      let gapW = 96 + Math.random()*80|0;
+      let gapW = 110 + Math.random()*70|0;
       arr.push({x, w:gapW, h:0, gap:true});
       x += gapW;
     }
@@ -96,10 +98,10 @@ function collectRoofItems() {
 
 // === ИНИЦИАЛИЗАЦИЯ ===
 function createHero() {
-  let r = getCurrentRoof();
+  let r = roofs.find(r => !r.gap && r.x < FIELD_W/3 && r.x+r.w > HERO_W*1.5) || roofs[0];
   return {
-    x: roofs[0].x+36,
-    y: FIELD_H-roofs[0].h-HERO_H,
+    x: r.x+36,
+    y: FIELD_H-r.h-HERO_H,
     vy: 0,
     w: HERO_W,
     h: HERO_H,
@@ -368,27 +370,12 @@ function gameLoop() {
     }
   }
 
-  // === ПАДЕНИЕ ===
-  if (isFalling) {
-    hero.y += fallSpeed;
-    fallSpeed += 1.2;
-    if (hero.y > FIELD_H) {
-      isFalling = false; fallSpeed = 0;
-      lives--;
-      updateLives();
-      if (lives <= 0) endGame();
-      else respawnOnRoof();
-      return;
-    }
-  } else if (!flyActive) {
-    // === ФИЗИКА/ПРЫЖОК ===
-    hero.y += hero.vy; hero.vy += GRAVITY;
-    let roofUnder = getRoofUnder(hero.x+HERO_W/2);
-    if (roofUnder && hero.y+HERO_H >= FIELD_H-roofUnder.h-4) {
-      hero.y = FIELD_H-roofUnder.h-HERO_H;
-      hero.vy = 0; hero.grounded = true;
+      hero.y = FIELD_H - roofUnder.h - HERO_H;
+      hero.vy = 0; 
+      hero.grounded = true;
     } else if (!roofUnder && hero.y+HERO_H>=FIELD_H-2) {
-      isFalling = true; fallSpeed = 16;
+      isFalling = true; 
+      fallSpeed = 16;
     }
   } else if (flyActive) {
     // === Флаппи-физика ===
@@ -549,9 +536,21 @@ function drawHeart(ctx, cx, cy, s) {
   ctx.restore();
 }
 function drawImage(src, x, y, w, h) {
-  let toDraw = images[src] && images[src].complete && images[src].naturalWidth>0 ? src : PLACEHOLDER;
-  const img = images[toDraw];
-  if (img) ctx.drawImage(img, x, y, w, h);
+  // Проверяем: если картинка загружена — рисуем, иначе рисуем placeholder
+  if (images[src] && images[src].complete && images[src].naturalWidth>0) {
+    ctx.drawImage(images[src], x, y, w, h);
+  } else {
+    // Placeholder-арт (JUMPMAN силуэт)
+    ctx.save();
+    ctx.fillStyle = "#222";
+    ctx.fillRect(x+w*0.22, y+h*0.32, w*0.58, h*0.4); // туловище
+    ctx.fillRect(x+w*0.41, y+h*0.12, w*0.18, h*0.2); // голова
+    ctx.fillRect(x+w*0.32, y+h*0.7, w*0.12, h*0.18); // нога1
+    ctx.fillRect(x+w*0.56, y+h*0.7, w*0.12, h*0.18); // нога2
+    ctx.fillRect(x+w*0.22, y+h*0.38, w*0.12, h*0.18); // рука1
+    ctx.fillRect(x+w*0.66, y+h*0.38, w*0.12, h*0.18); // рука2
+    ctx.restore();
+  }
 }
 function drawAirObstacle(ctx, obs) {
   ctx.save();

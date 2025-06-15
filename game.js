@@ -2,7 +2,7 @@
 
 const FIELD_W = 640, FIELD_H = 960, HERO_W = 128, HERO_H = 128;
 const GRAVITY = 1.5, JUMP_V = -26, SPEED_BASE = 8, FLY_SPEED = 16;
-const FLY_TIME = 10 * 60; // 10 сек
+const FLY_TIME = 10 * 60; // 10 сек (60 fps)
 let SPEED = SPEED_BASE;
 let canvas, ctx;
 let gameState = "menu";
@@ -39,7 +39,7 @@ const images = {
 ["run 1.png","run 2.png","run 3.png","run 4.png","fly 1.png","fly 2.png","fly 3.png","jumpman_retro_title_screen.png"].forEach(src=>{images[src].src=src;});
 const PLACEHOLDER = "run 1.png";
 
-// === ГЕНЕРАЦИЯ КРЫШ ===
+// === КРЫШИ ===
 function generateRoofs() {
   let x = 0, arr = [];
   while (x < FIELD_W+400) {
@@ -313,12 +313,6 @@ function gameLoop() {
   let currentSpeed = flyActive ? FLY_SPEED : SPEED;
   shiftRoofs(currentSpeed);
 
-  // === Актуализация предметов на крышах ===
-  if (!flyActive) {
-    spawnRoofItems();
-    collectRoofItems();
-  }
-
   if (flyActive) {
     spawnAirObstacle();
     shiftAirObstacles();
@@ -327,6 +321,8 @@ function gameLoop() {
     collectRoofObstacles();
     spawnRoofCoins();
     collectRoofCoins();
+    spawnRoofItems();
+    collectRoofItems();
   }
 
   // === КРЫШИ ===
@@ -350,7 +346,18 @@ function gameLoop() {
     }
   }
 
-            hero.y = FIELD_H-r.h-HERO_H;
+  // === ВОЗДУШНЫЕ ПРЕПЯТСТВИЯ ===
+  if (flyActive) {
+    for (let i=airObstacles.length-1; i>=0; i--) {
+      let obs = airObstacles[i];
+      drawAirObstacle(ctx, obs);
+      if (checkCollision(hero, obs)) {
+        flyActive = false; flyTimer = 0;
+        invulnTimer = 180;
+        hero.blink = true; hero.blinkTimer = invulnTimer;
+        let r = getRoofUnder(hero.x+HERO_W/2);
+        if (r) {
+          hero.y = FIELD_H-r.h-HERO_H;
           hero.vy = 0; isFalling = false; fallSpeed = 0; hero.grounded = true;
         } else {
           isFalling = true; fallSpeed = 16;
@@ -487,7 +494,7 @@ function gameLoop() {
   if (gameState === "play") requestAnimationFrame(gameLoop);
 }
 
-// === РЕНДЕР ЭЛЕМЕНТОВ (отдельные функции) ===
+// === РИСОВКА ЭЛЕМЕНТОВ ===
 function drawRoof(ctx, r) {
   ctx.save();
   ctx.fillStyle="#292933";

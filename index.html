@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Максимум контроля над viewport -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>JUMPMAN RETRO</title>
@@ -17,6 +16,7 @@
       overscroll-behavior: none !important;
       touch-action: none !important;
       margin: 0; padding: 0;
+      background: #C0C0C0;
     }
   </style>
 </head>
@@ -30,7 +30,7 @@
     <button id="startBtn" class="start-btn">START</button>
   </div>
 
-  <!-- ИГРОВОЙ HUD -->
+  <!-- HUD -->
   <div id="hud" class="hidden">
     <div class="top-ui">
       <div class="score-life">
@@ -40,15 +40,14 @@
       <button id="pauseBtn" class="pause-btn">||</button>
     </div>
     <div class="buffbar">
-      <canvas id="buffCanvas" width="120" height="32" class="buff-canvas"></canvas>
-      <span id="buffTimer" class="buff-timer"></span>
+      <canvas id="energyBar" width="300" height="28"></canvas>
     </div>
     <div class="canvas-wrap">
       <canvas id="gameCanvas" width="640" height="960"></canvas>
     </div>
   </div>
 
-  <!-- ЭКРАН GAME OVER -->
+  <!-- GAME OVER -->
   <div id="gameOverMenu" class="screen hidden">
     <div class="gameover-block">
       <div class="gameover-title">GAME OVER</div>
@@ -58,8 +57,9 @@
     </div>
   </div>
 
+  <!-- Кнопка FLY будет появляться через JS динамически! -->
+
   <script>
-    // Защита от любых скроллов и pinch-to-zoom
     document.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive:false });
     document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
     window.onload = () => { window.scrollTo(0, 0); };

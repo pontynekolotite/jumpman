@@ -43,35 +43,43 @@ const PLACEHOLDER = "__PLACEHOLDER__";
 
 // === КРЫШИ ===
 function generateRoofs() {
-  let x = 0, arr = [];
-  while (x < FIELD_W+400) {
-    let w = 180 + Math.random()*130|0;
-    let h = 160 + Math.random()*44|0;
-    arr.push({x, w, h, gap:false});
-    x += w;
-    if (x < FIELD_W+320) {
-      let gapW = 110 + Math.random()*70|0;
-      arr.push({x, w:gapW, h:0, gap:true});
-      x += gapW;
-    }
-  }
-  return arr;
-}
-function shiftRoofs(speed) {
-  for (let i=0;i<roofs.length;i++) roofs[i].x -= speed;
-  if (roofs[0].x+roofs[0].w<0) roofs.shift();
-  while (roofs[roofs.length-1].x< FIELD_W+180) {
-    let prev = roofs[roofs.length-1];
-    let x = prev.x+prev.w;
-    let gapW = 96 + Math.random()*80|0;
-    roofs.push({x, w:gapW, h:0, gap:true});
+  // Одна стартовая крыша, точно по центру, без гэпа
+  let arr = [];
+  arr.push({x: 0, w: FIELD_W, h: 180, gap: false});
+  let x = FIELD_W;
+  // Дальше идут случайные, чтобы не было пустого пространства
+  while (x < FIELD_W + 800) {
+    let gapW = 120 + Math.random()*80|0;
+    arr.push({x: x, w: gapW, h: 0, gap: true});
     x += gapW;
     let w = 160 + Math.random()*180|0;
     let h = 120 + Math.random()*60|0;
-    roofs.push({x, w, h, gap:false});
+    arr.push({x: x, w, h, gap: false});
+    x += w;
   }
+  return arr;
 }
 
+function createHero() {
+  // Стартуем на первой крыше, в центре экрана по X
+  let r = roofs[0];
+  return {
+    x: FIELD_W/2 - HERO_W/2,
+    y: FIELD_H - r.h - HERO_H,
+    vy: 0,
+    w: HERO_W,
+    h: HERO_H,
+    runFrame: 0,
+    flyFrame: 0,
+    jumping: false,
+    blink: false,
+    blinkTimer: 0,
+    grounded: true,
+    magnet: false,
+    highjump: false,
+    lowjump: false
+  };
+}
 // === СПАВН ПРЕДМЕТОВ НА КРЫШАХ ===
 function spawnRoofItems() {
   for (let r of roofs) {

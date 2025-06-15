@@ -1,31 +1,41 @@
-body {
-  background: #C0C0C0;
-  font-family: 'Press Start 2P', monospace;
+html, body {
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
   margin: 0;
   padding: 0;
-  min-height: 100vh;
-  min-width: 100vw;
-  overflow: hidden;
-  box-sizing: border-box;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  background: #C0C0C0;
 }
 
-.screen {
-  width: 100vw;
-  height: 100vh;
-  background: #C0C0C0;
+body {
+  font-family: 'Press Start 2P', monospace;
+  min-width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.screen, #hud {
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed;
+  top: 0; left: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background: #C0C0C0;
+  overflow: hidden !important;
 }
 
 .game-title {
   font-family: 'Press Start 2P', monospace;
-  font-size: 2.1rem;
+  font-size: 2.2rem;
   color: #EF1111;
   text-align: center;
   margin-bottom: 18px;
@@ -33,6 +43,7 @@ body {
   text-shadow: 2px 2px 0 #fff, 0 0 12px #DF1717;
   line-height: 2.7rem;
   text-transform: uppercase;
+  user-select: none;
 }
 
 .logo img {
@@ -62,39 +73,30 @@ body {
   background: #FF2222;
 }
 
-#hud {
-  width: 100vw;
-  height: 100vh;
-  background: #C0C0C0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
 .top-ui {
   width: 100vw;
   max-width: 640px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 22px;
+  margin-top: 18px;
   margin-bottom: 4px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  user-select: none;
 }
 
 .score-life {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 1.2rem;
-  margin-left: 12px;
+  gap: 12px;
+  font-size: 1.1rem;
+  margin-left: 10px;
 }
 
 #score {
   font-weight: bold;
   color: #222;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 #lives img {
@@ -125,7 +127,7 @@ body {
   width: 100vw;
   max-width: 640px;
   margin-bottom: 4px;
-  margin-left: 12px;
+  margin-left: 10px;
 }
 
 .buff-canvas {
@@ -147,10 +149,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100vw;
-  height: calc(100vh - 130px);
+  width: 100vw !important;
+  height: calc(100vh - 130px) !important;
   min-height: 540px;
-  /* Это поле всегда по центру, без прокрутки и рамок */
+  position: relative;
+  overflow: hidden;
+  background: none;
 }
 #gameCanvas {
   background: #F5F5F5;
@@ -163,6 +167,7 @@ body {
   max-height: 86vh;
   box-shadow: none;
   image-rendering: pixelated;
+  position: relative;
 }
 
 .gameover-block {
@@ -192,11 +197,11 @@ body {
 
 .hidden { display: none !important; }
 
-/* Мобильная адаптация */
+/* Адаптация для мобилки */
 @media (max-width: 700px), (max-height: 800px) {
   .game-title {
-    font-size: 1.17rem;
-    margin-bottom: 10px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
   .canvas-wrap, #gameCanvas {
     width: 100vw !important;

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=640, initial-scale=1.0, user-scalable=no">
+  <title>JUMPMAN RETRO</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- СТАРТОВОЕ МЕНЮ -->
+  <div id="startMenu" class="screen">
+    <div class="logo">
+      <img src="jumpman_retro_title_screen.png" width="640" height="360" alt="JUMPMAN RETRO">
+    </div>
+    <button id="startBtn" class="start-btn">START</button>
+  </div>
+
+  <!-- ИГРОВОЙ HUD -->
+  <div id="hud" class="hidden">
+    <div class="top-ui">
+      <div class="score-life">
+        <span id="score">0</span>
+        <span id="lives"></span>
+      </div>
+      <button id="pauseBtn" class="pause-btn">||</button>
+    </div>
+    <div class="buffbar">
+      <img id="buffIcon" class="buff-icon hidden" src="" alt="">
+      <span id="buffTimer" class="buff-timer"></span>
+    </div>
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+  </div>
+
+  <!-- ЭКРАН GAME OVER -->
+  <div id="gameOverMenu" class="screen hidden">
+    <div class="gameover-block">
+      <div class="gameover-title">GAME OVER</div>
+      <div class="final-score">SCORE: <span id="finalScore">0</span></div>
+      <button id="flyAgainBtn" class="menu-btn">FLY AGAIN</button>
+      <button id="backToMenuBtn" class="menu-btn">BACK TO MENU</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

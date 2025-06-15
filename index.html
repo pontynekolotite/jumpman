@@ -2,68 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>JUMPMAN RETRO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <style>
-    html, body {
-      overflow: hidden !important;
-      position: fixed !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      overscroll-behavior: none !important;
-      touch-action: none !important;
-      margin: 0; padding: 0;
-      background: #C0C0C0;
-    }
-  </style>
 </head>
 <body>
-  <!-- СТАРТОВОЕ МЕНЮ -->
-  <div id="startMenu" class="screen">
-    <div class="game-title">JUMPMAN RETRO</div>
-    <div class="logo">
-      <img src="jumpman_retro_title_screen.png" width="320" height="180" alt="JUMPMAN RETRO">
-    </div>
-    <button id="startBtn" class="start-btn">START</button>
-  </div>
-
-  <!-- HUD -->
-  <div id="hud" class="hidden">
-    <div class="top-ui">
-      <div class="score-life">
-        <span id="score">0</span>
-        <span id="lives"></span>
+  <div id="container">
+    <!-- СТАРТОВОЕ МЕНЮ -->
+    <div id="startMenu" class="screen">
+      <div>
+        <div class="logo-title">JUMPMAN RETRO</div>
+        <img class="logo-img" src="jumpman_retro_title_screen.png" alt="Jumpman Logo">
       </div>
-      <button id="pauseBtn" class="pause-btn">||</button>
+      <button id="startBtn" class="start-btn">START</button>
     </div>
-    <div class="buffbar">
-      <canvas id="energyBar" width="300" height="28"></canvas>
+
+    <!-- HUD (игровой интерфейс) -->
+    <div id="hud" class="screen hidden">
+      <div class="hud-row">
+        <div style="display: flex; align-items: center; gap: 22px;">
+          <span id="score">0</span>
+          <div id="lives"></div>
+        </div>
+        <button id="pauseBtn" class="pause-btn">PAUSE</button>
+      </div>
+      <canvas id="energyBar" width="300" height="32"></canvas>
+      <canvas id="gameCanvas" width="640" height="960" tabindex="1"></canvas>
     </div>
-    <div class="canvas-wrap">
-      <canvas id="gameCanvas" width="640" height="960"></canvas>
+
+    <!-- GAME OVER -->
+    <div id="gameOverMenu" class="screen hidden">
+      <div class="gameover-block">
+        <div class="gameover-title">GAME OVER</div>
+        <div class="gameover-score">SCORE: <span id="finalScore">0</span></div>
+        <button id="flyAgainBtn" class="menu-btn">FLY AGAIN</button>
+        <button id="backToMenuBtn" class="menu-btn">BACK TO MENU</button>
+      </div>
     </div>
   </div>
-
-  <!-- GAME OVER -->
-  <div id="gameOverMenu" class="screen hidden">
-    <div class="gameover-block">
-      <div class="gameover-title">GAME OVER</div>
-      <div class="final-score">SCORE: <span id="finalScore">0</span></div>
-      <button id="flyAgainBtn" class="menu-btn">FLY AGAIN</button>
-      <button id="backToMenuBtn" class="menu-btn">BACK TO MENU</button>
-    </div>
-  </div>
-
-  <!-- Кнопка FLY добавляется скриптом, не добавляй вручную -->
-
-  <script>
-    document.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive:false });
-    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
-    window.onload = () => { window.scrollTo(0, 0); };
-  </script>
   <script src="game.js"></script>
 </body>
 </html>

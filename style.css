@@ -120,7 +120,7 @@ body {
   font-size: 1.1rem;
 }
 
-#lives img {
+#lives img, .heart-canvas {
   width: 36px;
   height: 36px;
   margin-right: 3px;

@@ -2,37 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>JUMPMAN RETRO</title>
-  <meta name="viewport" content="width=640, initial-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0;overflow:hidden;">
-  <div id="container">
-    <div id="startMenu" class="screen">
-      <div>
-        <div class="logo-title">JUMPMAN RETRO</div>
-      </div>
-      <button id="startBtn" class="start-btn">START</button>
+<body>
+  <!-- СТАРТОВОЕ МЕНЮ -->
+  <div id="startMenu" class="screen">
+    <div class="game-title">JUMPMAN RETRO</div>
+    <div class="logo">
+      <img src="jumpman_retro_title_screen.png" width="320" height="180" alt="JUMPMAN RETRO">
     </div>
-    <div id="hud" class="screen hidden">
-      <div class="hud-row">
-        <span id="score">0</span>
-        <div id="lives"></div>
-        <button id="pauseBtn" class="pause-btn">PAUSE</button>
-      </div>
-      <canvas id="energyBar" width="300" height="32"></canvas>
-      <canvas id="gameCanvas" width="640" height="960" tabindex="1"></canvas>
+    <button id="startBtn" class="start-btn">START</button>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden screen">
+    <div class="top-ui">
+      <span id="score">0</span>
+      <span id="lives"></span>
+      <button id="pauseBtn" class="pause-btn">||</button>
     </div>
-    <div id="gameOverMenu" class="screen hidden">
-      <div class="gameover-block">
-        <div class="gameover-title">GAME OVER</div>
-        <div class="gameover-score">SCORE: <span id="finalScore">0</span></div>
-        <button id="flyAgainBtn" class="menu-btn">FLY AGAIN</button>
-        <button id="backToMenuBtn" class="menu-btn">BACK TO MENU</button>
-      </div>
+    <div class="buffbar">
+      <canvas id="energyBar" width="300" height="28"></canvas>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas" width="640" height="960"></canvas>
     </div>
   </div>
+
+  <!-- GAME OVER -->
+  <div id="gameOverMenu" class="screen hidden">
+    <div class="gameover-block">
+      <div class="gameover-title">GAME OVER</div>
+      <div class="final-score">SCORE: <span id="finalScore">0</span></div>
+      <button id="flyAgainBtn" class="menu-btn">FLY AGAIN</button>
+      <button id="backToMenuBtn" class="menu-btn">BACK TO MENU</button>
+    </div>
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
-// JUMPMAN RETRO — АДАПТИВ, ТОЛЬКО ТВОИ PNG, всё остальное отрисовка вручную
+// JUMPMAN RETRO — фиксация, адаптив, только твои ассеты, всё лишнее рисуем в canvas
+
 const FIELD_W = 640, FIELD_H = 960, GROUND_Y = FIELD_H - 96;
 const HERO_W = 64, HERO_H = 64, COIN_SIZE = 36, HEART_SIZE = 36;
 const RUN_FRAME_COUNT = 4;
@@ -16,7 +17,6 @@ const assetList = [
 ];
 const PLACEHOLDER = "run 1.png";
 
-// Универсальная загрузка png
 function hasAsset(src) {
   return images[src] && images[src].complete && images[src].naturalWidth > 0;
 }
@@ -95,6 +95,16 @@ function onJump() {
 window.onload = function() {
   canvas = document.getElementById("gameCanvas");
   ctx = canvas.getContext("2d");
+
+  // Фиксация поля и антискролл
+  function fixScreen() {
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+  fixScreen();
+  window.addEventListener('resize', fixScreen);
+
   document.getElementById("startBtn").onclick = () => { showScreen("hud"); startGame(); };
   document.getElementById("flyAgainBtn").onclick = () => { showScreen("hud"); startGame(); };
   document.getElementById("backToMenuBtn").onclick = () => { showScreen("startMenu"); stopGame(); };
@@ -105,6 +115,11 @@ window.onload = function() {
   document.addEventListener("keydown", (e) => { if (e.code === "Space") onJump(); });
   canvas.addEventListener("mousedown", (e) => { onJump(); });
   document.body.addEventListener("touchstart", (e) => { if (gameState === "play") onJump(); });
+
+  // Защита от любых скроллов
+  document.body.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive:false });
+  document.body.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+
   loadAssets(() => { showScreen("startMenu"); });
 };
 function stopGame() { gameState = "menu"; }

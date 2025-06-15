@@ -1,12 +1,15 @@
-// JUMPMAN RETRO — Rooftop Runner (крыши, пролёты, падения, два типа препятствий на крышах, energy)
+// JUMPMAN RETRO — Rooftop Runner + FLY MODE
+
 const FIELD_W = 640, FIELD_H = 960, HERO_W = 128, HERO_H = 128;
-const GRAVITY = 1.5, JUMP_V = -26, SPEED = 8;
+const GRAVITY = 1.5, JUMP_V = -26, SPEED = 8, FLY_SPEED = 16;
+const FLY_TIME = 10 * 60; // 10 секунд * 60fps
 let canvas, ctx;
 let gameState = "menu";
-let score = 0, lives = 3, runAnimTimer = 0;
-let hero, roofs, coins, roofObstacles;
+let score = 0, lives = 3, runAnimTimer = 0, flyAnimTimer = 0;
+let hero, roofs, coins, roofObstacles, airObstacles;
 let energy = 0, energyGoal = 23, coinsCollected = 0, flyAvailable = false;
 let isFalling = false, fallSpeed = 0;
+let flyActive = false, flyTimer = 0, invulnTimer = 0;
 const images = {
   "run 1.png": new Image(),
   "run 2.png": new Image(),
@@ -37,11 +40,10 @@ function generateRoofs() {
   }
   return arr;
 }
-function shiftRoofs() {
-  for (let i=0;i<roofs.length;i++) roofs[i].x -= SPEED;
+function shiftRoofs(speed) {
+  for (let i=0;i<roofs.length;i++) roofs[i].x -= speed;
   if (roofs[0].x+roofs[0].w<0) roofs.shift();
   while (roofs[roofs.length-1].x< FIELD_W+180) {
-    // Новая крыша или пролёт
     let prev = roofs[roofs.length-1];
     let x = prev.x+prev.w;
     let gapW = 96 + Math.random()*80|0;
@@ -50,6 +52,25 @@ function shiftRoofs() {
     let w = 160 + Math.random()*180|0;
     let h = 120 + Math.random()*60|0;
     roofs.push({x, w, h, gap:false});
+  }
+}
+
+// === ВОЗДУШНЫЕ ПРЕПЯТСТВИЯ ===
+function spawnAirObstacle() {
+  if (!flyActive) return;
+  if (airObstacles.length > 5) return;
+  if (Math.random() < 0.04) {
+    let t = Math.random();
+    let type = t < 0.5 ? "cloud" : t < 0.8 ? "bird" : "sign";
+    let x = FIELD_W + 64 + Math.random()*100;
+    let y = 60 + Math.random() * (FIELD_H - 440);
+    airObstacles.push({type, x, y, w: 96, h: 56});
+  }
+}
+function shiftAirObstacles() {
+  for (let i=airObstacles.length-1; i>=0; i--) {
+    airObstacles[i].x -= FLY_SPEED;
+    if (airObstacles[i].x + airObstacles[i].w < 0) airObstacles.splice(i,1);
   }
 }
 
@@ -63,6 +84,7 @@ function createHero() {
     w: HERO_W,
     h: HERO_H,
     runFrame: 0,
+    flyFrame: 0,
     jumping: false,
     blink: false,
     blinkTimer: 0,
@@ -130,8 +152,7 @@ function collectRoofCoins() {
     for (let c of r.coins) coins.push({...c, roof:r});
   }
 }
-
-// === HUD ===
+// === HUD, ENERGY, FLY ===
 function updateScore() { document.getElementById("score").textContent = score; }
 function updateLives() {
   let html = "";
@@ -157,9 +178,12 @@ function updateEnergyBar() {
     ctx2.font = "bold 16px 'Press Start 2P', monospace";
     ctx2.fillText("READY!",178,24);
   }
+  if (flyActive) {
+    ctx2.fillStyle = "#2299FF";
+    ctx2.font = "bold 16px 'Press Start 2P', monospace";
+    ctx2.fillText(`${Math.ceil((FLY_TIME-flyTimer)/60)}s`, 220, 24);
+  }
 }
-
-// === FLY КНОПКА ===
 function showFlyBtn() {
   let btn = document.getElementById("flyBtn");
   if (!btn) {
@@ -167,7 +191,7 @@ function showFlyBtn() {
     btn.id = "flyBtn";
     btn.textContent = "FLY";
     btn.className = "fly-btn";
-    btn.onclick = ()=>alert("Режим полёта пока не реализован — будет во 2й итерации");
+    btn.onclick = tryActivateFly;
     document.body.appendChild(btn);
   }
   btn.classList.remove("hidden");
@@ -176,11 +200,21 @@ function hideFlyBtn() {
   let btn = document.getElementById("flyBtn");
   if (btn) btn.classList.add("hidden");
 }
+function tryActivateFly() {
+  if (!flyAvailable || flyActive) return;
+  flyActive = true;
+  flyAvailable = false;
+  hideFlyBtn();
+  flyTimer = 0;
+  hero.flyFrame = 0;
+}
 
 // === УПРАВЛЕНИЕ ===
 function onJump() {
   if (gameState !== "play" || isFalling) return;
-  if (!hero.jumping && hero.grounded) {
+  if (flyActive) {
+    hero.vy = -13; // Flappy jump
+  } else if (!hero.jumping && hero.grounded) {
     hero.vy = JUMP_V;
     hero.jumping = true; hero.grounded = false;
     setTimeout(() => { hero.jumping = false; }, 220);
@@ -212,7 +246,9 @@ function startGame() {
   collectRoofObstacles();
   collectRoofCoins();
   hero = createHero();
+  airObstacles = [];
   updateLives(); updateScore(); updateEnergyBar(); hideFlyBtn();
+  flyActive = false; flyTimer = 0; invulnTimer = 0;
   gameState = "play";
   requestAnimationFrame(gameLoop);
 }
@@ -224,18 +260,52 @@ function gameLoop() {
   ctx.clearRect(0,0,FIELD_W,FIELD_H);
   ctx.fillStyle="#C0C0C0"; ctx.fillRect(0,0,FIELD_W,FIELD_H);
 
-  shiftRoofs();
-  spawnRoofObstacles();
-  collectRoofObstacles();
-  spawnRoofCoins();
-  collectRoofCoins();
+  // --- Сдвиг поля
+  let currentSpeed = flyActive ? FLY_SPEED : SPEED;
+  shiftRoofs(currentSpeed);
 
-  // === ОТРИСОВКА КРЫШ ===
-  for (let r of roofs) {
-    if (r.gap) continue;
-    drawRoof(ctx, r);
+  if (flyActive) {
+    spawnAirObstacle();
+    shiftAirObstacles();
+  } else {
+    spawnRoofObstacles();
+    collectRoofObstacles();
+    spawnRoofCoins();
+    collectRoofCoins();
   }
-  // === ОТРИСОВКА ПРОЛЁТОВ === (ничего, просто фон)
+
+  // === КРЫШИ ===
+  if (!flyActive) {
+    for (let r of roofs) {
+      if (r.gap) continue;
+      drawRoof(ctx, r);
+    }
+  }
+
+  // === ВОЗДУШНЫЕ ПРЕПЯТСТВИЯ ===
+  if (flyActive) {
+    for (let i=airObstacles.length-1; i>=0; i--) {
+      let obs = airObstacles[i];
+      drawAirObstacle(ctx, obs);
+      // Коллизия
+      if (checkCollision(hero, obs)) {
+        // Вылет из режима полёта, возврат на крышу/падение, неуязвимость 3 сек
+        flyActive = false; flyTimer = 0;
+        invulnTimer = 180; // 3 сек * 60fps
+        hero.blink = true; hero.blinkTimer = invulnTimer;
+        // Проверка есть ли под Джорданом крыша — если нет, падение
+        let r = getRoofUnder(hero.x+HERO_W/2);
+        if (r) {
+          hero.y = FIELD_H-r.h-HERO_H;
+          hero.vy = 0; isFalling = false; fallSpeed = 0; hero.grounded = true;
+        } else {
+          isFalling = true; fallSpeed = 16;
+        }
+        airObstacles = [];
+        break;
+      }
+    }
+  }
 
   // === ПАДЕНИЕ ===
   if (isFalling) {
@@ -249,7 +319,7 @@ function gameLoop() {
       else respawnOnRoof();
       return;
     }
-  } else {
+  } else if (!flyActive) {
     // === ФИЗИКА/ПРЫЖОК ===
     hero.y += hero.vy; hero.vy += GRAVITY;
     // Проверка — стоим ли на крыше?
@@ -261,53 +331,140 @@ function gameLoop() {
       // Вышли за поле (в пролёт) — падаем!
       isFalling = true; fallSpeed = 16;
     }
+  } else if (flyActive) {
+    // Флаппи-физика
+    hero.y += hero.vy;
+    hero.vy += 0.8;
+    if (hero.y < 12) { hero.y = 12; hero.vy = 1; }
+    if (hero.y > FIELD_H - 180) { hero.y = FIELD_H - 180; hero.vy = 0; }
   }
 
-  // === ОТРИСОВКА ПРЕПЯТСТВИЙ ===
-  for (let ob of roofObstacles) {
-    if (ob.x+ob.w<0 || ob.roof.gap) continue;
-    drawRoofObstacle(ctx, ob);
-    // Коллизия
-    if (!isFalling && checkCollision(hero, ob)) {
-      lives--;
-      updateLives();
-      hero.blink = true;
-      if (lives <= 0) endGame();
-      else respawnOnRoof();
-      return;
+  // === ПРЕПЯТСТВИЯ НА КРЫШАХ ===
+  if (!flyActive) {
+    for (let ob of roofObstacles) {
+      if (ob.x+ob.w<0 || ob.roof.gap) continue;
+      drawRoofObstacle(ctx, ob);
+      // Коллизия
+      if (!isFalling && !flyActive && checkCollision(hero, ob) && !invulnTimer) {
+        lives--;
+        updateLives();
+        hero.blink = true;
+        if (lives <= 0) endGame();
+        else respawnOnRoof();
+        return;
+      }
+      ob.x -= SPEED;
     }
-    ob.x -= SPEED;
   }
 
-  // === ОТРИСОВКА МОНЕТ ===
-  for (let c of coins) {
-    if (c.x + c.r*2 < 0 || c.roof.gap) continue;
-    drawCoin(ctx, c);
-    // Коллизия
-    if (!isFalling && checkCollision(hero, {x:c.x, y:c.y, w:c.r*2, h:c.r*2})) {
-      score += 10; coinsCollected++; energy++;
-      if (energy >= energyGoal && !flyAvailable) { flyAvailable = true; showFlyBtn(); }
-      c.x = -999; // убираем монету
-      updateScore(); updateEnergyBar();
+  // === МОНЕТЫ ===
+  if (!flyActive) {
+    for (let c of coins) {
+      if (c.x + c.r*2 < 0 || c.roof.gap) continue;
+      drawCoin(ctx, c);
+      if (!isFalling && checkCollision(hero, {x:c.x, y:c.y, w:c.r*2, h:c.r*2})) {
+        score += 10; coinsCollected++; energy++;
+        if (energy >= energyGoal && !flyAvailable) { flyAvailable = true; showFlyBtn(); }
+        c.x = -999; // убираем монету
+        updateScore(); updateEnergyBar();
+      }
+      c.x -= SPEED;
     }
-    c.x -= SPEED;
   }
 
   // === АНИМАЦИЯ ГЕРОЯ ===
-  runAnimTimer++;
-  if (runAnimTimer % 7 === 0) hero.runFrame = (hero.runFrame + 1) % 4;
-  if (hero.blink && runAnimTimer % 4 < 2) {
-    // мигает — не рисуем
+  if (flyActive) {
+    flyAnimTimer++;
+    if (flyAnimTimer % 6 === 0) hero.flyFrame = (hero.flyFrame + 1) % 3;
+    if (hero.blink && flyAnimTimer % 4 < 2) {
+      // мигает — не рисуем
+    } else {
+      drawImage(`fly ${hero.flyFrame+1}.png`, hero.x, hero.y, HERO_W, HERO_H);
+    }
   } else {
-    drawImage(`run ${hero.runFrame+1}.png`, hero.x, hero.y, HERO_W, HERO_H);
+    runAnimTimer++;
+    if (runAnimTimer % 7 === 0) hero.runFrame = (hero.runFrame + 1) % 4;
+    if (hero.blink && runAnimTimer % 4 < 2) {
+      // мигает — не рисуем
+    } else {
+      drawImage(`run ${hero.runFrame+1}.png`, hero.x, hero.y, HERO_W, HERO_H);
+    }
+  }
+  if (hero.blink) {
+    hero.blinkTimer--;
+    if (hero.blinkTimer <= 0) hero.blink = false;
+  }
+
+  // === FLY таймер ===
+  if (flyActive) {
+    flyTimer++;
+    if (flyTimer >= FLY_TIME) {
+      flyActive = false; flyTimer = 0;
+      invulnTimer = 180; // 3 сек неуязвимости
+      hero.blink = true; hero.blinkTimer = invulnTimer;
+      // Проверка крыши под ногами — если нет, падаем!
+      let r = getRoofUnder(hero.x+HERO_W/2);
+      if (r) {
+        hero.y = FIELD_H-r.h-HERO_H;
+        hero.vy = 0; isFalling = false; fallSpeed = 0; hero.grounded = true;
+      } else {
+        isFalling = true; fallSpeed = 16;
+      }
+      airObstacles = [];
+      energy = 0;
+      updateEnergyBar();
+    }
+  }
+  if (invulnTimer > 0) {
+    invulnTimer--;
+    if (invulnTimer === 0) hero.blink = false;
   }
 
   if (gameState === "play") requestAnimationFrame(gameLoop);
 }
+// === ВОЗДУШНЫЕ ПРЕПЯТСТВИЯ ===
+function drawAirObstacle(ctx, obs) {
+  ctx.save();
+  if (obs.type === "cloud") {
+    ctx.globalAlpha = 0.29;
+    ctx.beginPath();
+    ctx.ellipse(obs.x+obs.w*0.4, obs.y+obs.h*0.6, obs.w*0.38, obs.h*0.33, 0, 0, 2*Math.PI);
+    ctx.ellipse(obs.x+obs.w*0.6, obs.y+obs.h*0.45, obs.w*0.35, obs.h*0.27, 0, 0, 2*Math.PI);
+    ctx.ellipse(obs.x+obs.w*0.7, obs.y+obs.h*0.7, obs.w*0.19, obs.h*0.23, 0, 0, 2*Math.PI);
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "#C0C0C0";
+    ctx.shadowBlur = 13;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  } else if (obs.type === "bird") {
+    ctx.beginPath();
+    ctx.ellipse(obs.x+obs.w/2, obs.y+obs.h/2, obs.w/2.1, obs.h/2.7, 0, 0, 2*Math.PI);
+    ctx.fillStyle = "#333";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(obs.x+obs.w*0.3, obs.y+obs.h*0.7);
+    ctx.lineTo(obs.x, obs.y+obs.h*0.5);
+    ctx.lineTo(obs.x+obs.w*0.45, obs.y+obs.h*0.1);
+    ctx.fillStyle = "#555";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(obs.x+obs.w*0.7, obs.y+obs.h*0.7);
+    ctx.lineTo(obs.x+obs.w, obs.y+obs.h*0.5);
+    ctx.lineTo(obs.x+obs.w*0.55, obs.y+obs.h*0.1);
+    ctx.fillStyle = "#555";
+    ctx.fill();
+  } else if (obs.type === "sign") {
+    ctx.fillStyle="#d11";
+    ctx.fillRect(obs.x,obs.y,obs.w,obs.h*0.78);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(obs.x+12,obs.y+obs.h*0.78-8,obs.w-24,8);
+  }
+  ctx.restore();
+}
 
-// === ОТРИСОВКА ЭЛЕМЕНТОВ ===
+// === РЕНДЕР КРЫШ/ПРЕПЯТСТВИЙ/МОНЕТ/СЕРДЕЦ ===
 function drawRoof(ctx, r) {
-  // Основание
   ctx.save();
   ctx.fillStyle="#292933";
   ctx.fillRect(r.x,FIELD_H-r.h,r.w,r.h);
@@ -316,7 +473,6 @@ function drawRoof(ctx, r) {
   ctx.moveTo(r.x,FIELD_H-r.h);
   ctx.lineTo(r.x+r.w,FIELD_H-r.h);
   ctx.stroke();
-  // Пиксельные “ступеньки” (8бит-стиль)
   for (let x=r.x;x<r.x+r.w-8;x+=24) {
     ctx.fillStyle="#343448";
     ctx.fillRect(x,FIELD_H-r.h,12,Math.random()>0.7?8:16);
@@ -324,7 +480,6 @@ function drawRoof(ctx, r) {
   ctx.restore();
 }
 function drawRoofObstacle(ctx, ob) {
-  // type1 — вентиляция (черная с полосой), type2 — красный короб
   ctx.save();
   if (ob.type===1) {
     ctx.fillStyle="#111"; ctx.fillRect(ob.x,ob.y,ob.w,ob.h);
@@ -361,6 +516,11 @@ function drawHeart(ctx, cx, cy, s) {
   ctx.shadowBlur = 3;
   ctx.fill();
   ctx.restore();
+}
+function drawImage(src, x, y, w, h) {
+  let toDraw = images[src] && images[src].complete && images[src].naturalWidth>0 ? src : PLACEHOLDER;
+  const img = images[toDraw];
+  if (img) ctx.drawImage(img, x, y, w, h);
 }
 
 // === КОЛЛИЖЕНЫ И ФИНАЛ ===

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=640, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=640, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
   <title>JUMPMAN RETRO</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -10,8 +10,9 @@
 <body>
   <!-- СТАРТОВОЕ МЕНЮ -->
   <div id="startMenu" class="screen">
+    <div class="game-title">JUMPMAN RETRO</div>
     <div class="logo">
-      <img src="jumpman_retro_title_screen.png" width="640" height="360" alt="JUMPMAN RETRO">
+      <img src="jumpman_retro_title_screen.png" width="320" height="180" alt="JUMPMAN RETRO">
     </div>
     <button id="startBtn" class="start-btn">START</button>
   </div>
@@ -26,10 +27,12 @@
       <button id="pauseBtn" class="pause-btn">||</button>
     </div>
     <div class="buffbar">
-      <img id="buffIcon" class="buff-icon hidden" src="" alt="">
+      <canvas id="buffCanvas" width="120" height="32" class="buff-canvas"></canvas>
       <span id="buffTimer" class="buff-timer"></span>
     </div>
-    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas" width="640" height="960"></canvas>
+    </div>
   </div>
 
   <!-- ЭКРАН GAME OVER -->

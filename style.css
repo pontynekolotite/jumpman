@@ -24,7 +24,6 @@ body {
   margin: 0 auto 32px auto;
   box-shadow: 0 4px 24px rgba(0,0,0,0.16);
 }
-
 .start-btn, .menu-btn {
   font-family: inherit;
   font-size: 2rem;
@@ -77,8 +76,8 @@ body {
 }
 
 #lives img {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   margin-right: 2px;
   vertical-align: middle;
 }
@@ -104,8 +103,8 @@ body {
 }
 
 .buff-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   margin-right: 12px;
 }
 
